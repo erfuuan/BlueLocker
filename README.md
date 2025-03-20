@@ -24,7 +24,7 @@ go mod tidy
 
 ### 3. Run the program:
 ```sh
-sudo go run monitor.go
+sudo go run main.go
 ```
 **(Requires sudo to access Bluetooth adapter)**
 
