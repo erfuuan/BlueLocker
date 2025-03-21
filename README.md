@@ -1,6 +1,6 @@
 # BlueLocker 🔵🔒
 
-**BlueLocker** is a simple and efficient tool that automatically locks your laptop when your **Galaxy Watch** (or any Bluetooth device) disconnects. It enhances security by ensuring your device is locked when you step away.
+**BlueLocker** is a simple and efficient tool that automatically locks your laptop when a specific Bluetooth device disconnects. It enhances security by ensuring your device is locked when you step away.
 
 ## 🚀 Features
 - 🔍 **Scans for Bluetooth devices** every few seconds.
@@ -34,9 +34,9 @@ Find your Bluetooth device’s MAC address using:
 ```sh
 hcitool scan
 ```
-Edit `monitor.go` and set `targetMAC` to your device’s MAC address:
+Edit `main.go` and set `targetMAC` to your device’s MAC address:
 ```go
-targetMAC = "DC:C4:9C:B3:D4:17" // Example MAC
+targetMAC = "AA:A1:1A:A1:A1:11" // Example MAC
 ```
 
 ## 📌 Usage
@@ -54,6 +54,3 @@ Pull requests are welcome! If you have suggestions, create an issue or contribut
 
 ## 📜 License
 This project is licensed under the **MIT License**.
-
----
-Made with ❤️ by [Your Name]

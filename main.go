@@ -2,113 +2,61 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os/exec"
+	"strings"
 	"time"
-
-	"tinygo.org/x/bluetooth"
 )
 
-const targetMACAddress = "DC:C4:9C:B3:D4:17"
+// Function to execute commands and return the output
+func runCommand(name string, args ...string) string {
+	cmd := exec.Command(name, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Error executing %s %v: %s\n", name, args, string(output))
+	}
+	return string(output)
+}
 
-// const targetMACAddress = "38:8A:06:67:65:A5"
-
-func lockLaptop() {
-	fmt.Println("Locking laptop...")
-
-	// Try `loginctl lock-session` (Recommended)
-	cmd := exec.Command("loginctl", "lock-session")
+// Function to show a desktop notification
+func showAlert(title, message string) {
+	cmd := exec.Command("notify-send", title, message, "-i", "error", "-t", "5000")
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println("Failed to lock using loginctl, trying gnome-screensaver-command...")
-
-		// Fallback to `gnome-screensaver-command -l`
-		cmd = exec.Command("gnome-screensaver-command", "-l")
-		err = cmd.Run()
-		if err != nil {
-			log.Fatal("Failed to lock laptop:", err)
-		}
+		fmt.Printf("Error showing alert: %v\n", err)
 	}
 }
 
-func main() {
+// Function to scan for the Bluetooth device and lock the system if not found
+func scanAndCheck() {
+	for {
+		fmt.Println("🔍 Scanning for Bluetooth devices...")
+		runCommand("bluetoothctl", "scan", "on")
+		time.Sleep(12 * time.Second)
 
-	fmt.Println(" start scanning")
+		// Retrieve the list of available Bluetooth devices
+		devices := runCommand("bluetoothctl", "devices")
+		fmt.Println("📋 Device list:")
+		fmt.Println(devices)
 
-	adapter := bluetooth.DefaultAdapter
-	err := adapter.Enable()
-	if err != nil {
-		log.Fatal("Failed to enable Bluetooth:", err)
-	}
-
-	var targetDevice bluetooth.ScanResult
-	deviceFound := false
-
-	// Start scanning
-	err = adapter.Scan(func(adapter *bluetooth.Adapter, device bluetooth.ScanResult) {
-		fmt.Println("Found device:", device.Address.String(), "- RSSI:", device.RSSI, "- LocalName:", device.LocalName())
-
-		// time.Sleep(50 * time.Second)
-		if device.Address.String() == targetMACAddress {
-			fmt.Println("Target device found!")
-			targetDevice = device
-			deviceFound = true
-			adapter.StopScan() // Stop scanning once the device is found
+		// Check if the target device is in the list
+		if strings.Contains(devices, deviceMAC) {
+			fmt.Println("✅ Device Found:", deviceMAC)
 		} else {
-			fmt.Println("device not found , now laptop is lock")
-			// lockLaptop() // Lock laptop if connection fails
+			fmt.Println("❌ Device Not Found! Locking system...")
+			showAlert("Device Not Found", "Your device is not connected. Locking system...")
 
+			time.Sleep(10 * time.Second)                  // Delay before locking the system
+			runCommand("gnome-screensaver-command", "-l") // Lock the screen
 		}
-	})
-	if err != nil {
-		log.Fatal("Error during scanning:", err)
+
+		time.Sleep(5 * time.Second) // Prevent excessive resource usage
 	}
+}
 
-	time.Sleep(2 * time.Second)
+// The MAC address of the target Bluetooth device
+var deviceMAC = "38:8A:06:67:65:A5"
 
-	if deviceFound {
-		fmt.Println(targetDevice)
-		peripheral, err := adapter.Connect(targetDevice.Address, bluetooth.ConnectionParams{})
-
-		if err != nil {
-			fmt.Println("Failed to connect to device:", err)
-			lockLaptop() // Lock laptop if connection fails
-			return
-		}
-		defer peripheral.Disconnect()
-		fmt.Println("Successfully connected to the device!")
-
-		go func() {
-			for {
-				time.Sleep(1 * time.Second)
-
-				// Check if the device is still connected using RSSI
-				err := adapter.Scan(func(adapter *bluetooth.Adapter, device bluetooth.ScanResult) {
-					if device.Address.String() == targetMACAddress {
-						fmt.Println("Device still connected, RSSI:", device.RSSI)
-					}
-				})
-				if err != nil {
-					lockLaptop()
-
-					fmt.Println("Error scanning:", err)
-				}
-
-				// If scan does not find the device, assume disconnected
-				if err != nil || targetDevice.Address.String() != targetMACAddress {
-					fmt.Println("Device disconnected! Locking laptop...")
-					lockLaptop()
-					return
-				}
-			}
-		}()
-
-		// Keep the program running
-		select {}
-
-	} else {
-		fmt.Println("Target device not found, locking laptop.")
-		lockLaptop()
-	}
-
+func main() {
+	fmt.Println("🚀 Starting BlueLocker...")
+	scanAndCheck()
 }
