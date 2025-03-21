@@ -54,7 +54,7 @@ func scanAndCheck() {
 }
 
 // The MAC address of the target Bluetooth device
-var deviceMAC = "38:8A:06:67:65:A5"
+var deviceMAC = "AA:A1:1A:A1:A1:11"
 
 func main() {
 	fmt.Println("🚀 Starting BlueLocker...")
